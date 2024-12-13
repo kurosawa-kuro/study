@@ -7,7 +7,63 @@
     db_name: training
     db_user: postgres
     db_password: postgres
+    nginx_conf: |
+      user nginx;
+      worker_processes auto;
+      error_log /var/log/nginx/error.log;
+      pid /run/nginx.pid;
+
+      events {
+          worker_connections 1024;
+      }
+
+      http {
+          log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" "$http_x_forwarded_for"';
+
+          access_log  /var/log/nginx/access.log  main;
+
+          sendfile            on;
+          tcp_nopush          on;
+          tcp_nodelay         on;
+          keepalive_timeout   65;
+          types_hash_max_size 4096;
+
+          include             /etc/nginx/mime.types;
+          default_type        application/octet-stream;
+
+          server {
+              listen       80;
+              listen       [::]:80;
+              server_name  _;
+              root         /usr/share/nginx/html;
+
+              location / {
+              }
+
+              error_page 404 /404.html;
+              location = /404.html {
+              }
+
+              error_page 500 502 503 504 /50x.html;
+              location = /50x.html {
+              }
+          }
+      }
+    pg_hba_conf: |
+      # TYPE  DATABASE        USER            ADDRESS                 METHOD
+      local   all            all                                     trust
+      host    all            all             127.0.0.1/32            trust
+      host    all            all             ::1/128                 trust
+    pg_hba_conf_md5: |
+      # TYPE  DATABASE        USER            ADDRESS                 METHOD
+      local   all            all                                     md5
+      host    all            all             127.0.0.1/32            md5
+      host    all            all             ::1/128                 md5
+
   tasks:
+    # System Update and Package Installation
     - name: Update all packages
       dnf:
         name: "*"
@@ -29,6 +85,7 @@
           - nodejs
         state: present
 
+    # PostgreSQL Configuration
     - name: Initialize PostgreSQL database
       command: postgresql-setup --initdb
       args:
@@ -37,11 +94,7 @@
     - name: Configure pg_hba.conf
       copy:
         dest: /var/lib/pgsql/data/pg_hba.conf
-        content: |
-          # TYPE  DATABASE        USER            ADDRESS                 METHOD
-          local   all            all                                     trust
-          host    all            all             127.0.0.1/32            trust
-          host    all            all             ::1/128                 trust
+        content: "{{ pg_hba_conf }}"
         owner: postgres
         group: postgres
         mode: '0600'
@@ -53,7 +106,6 @@
         enabled: yes
 
     - name: Check if database exists
-      become: yes
       become_user: postgres
       environment:
         PGPASSWORD: "{{ db_password }}"
@@ -63,7 +115,6 @@
       changed_when: false
 
     - name: Check if password is set
-      become: yes
       become_user: postgres
       environment:
         PGPASSWORD: "{{ db_password }}"
@@ -74,7 +125,6 @@
       failed_when: false
 
     - name: Setup PostgreSQL
-      become: yes
       become_user: postgres
       environment:
         PGPASSWORD: "{{ db_password }}"
@@ -92,11 +142,7 @@
     - name: Update pg_hba.conf for password authentication
       copy:
         dest: /var/lib/pgsql/data/pg_hba.conf
-        content: |
-          # TYPE  DATABASE        USER            ADDRESS                 METHOD
-          local   all            all                                     md5
-          host    all            all             127.0.0.1/32            md5
-          host    all            all             ::1/128                 md5
+        content: "{{ pg_hba_conf_md5 }}"
         owner: postgres
         group: postgres
         mode: '0600'
@@ -106,34 +152,54 @@
         name: postgresql
         state: restarted
 
+    # Firewall Configuration
     - name: Start and enable firewalld
       systemd:
         name: firewalld
         state: started
         enabled: yes
 
-    - name: Allow HTTP through firewall
-      become: yes
-      command: firewall-cmd --permanent --add-service=http
-      register: result
-      changed_when: result.rc == 0
-      ignore_errors: yes
-
-    - name: Allow HTTPS through firewall
-      become: yes
-      command: firewall-cmd --permanent --add-service=https
+    - name: Configure firewall
+      shell: |
+        sudo firewall-cmd --permanent --add-service={{ item }}
+      loop:
+        - http
+        - https
       register: result
       changed_when: result.rc == 0
       ignore_errors: yes
 
     - name: Reload firewall
-      become: yes
-      command: firewall-cmd --reload
+      shell: |
+        sudo firewall-cmd --reload
       register: result
       changed_when: result.rc == 0
 
+    - name: Check firewall configuration
+      shell: |
+        sudo firewall-cmd --list-all
+      register: firewall_config
+      changed_when: false
+
+    - name: Display firewall configuration
+      debug:
+        var: firewall_config.stdout_lines
+
+    # Nginx Configuration
+    - name: Configure Nginx
+      copy:
+        dest: /etc/nginx/nginx.conf
+        content: "{{ nginx_conf }}"
+
+    - name: Start and enable Nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    # Final Check
     - name: Check PostgreSQL databases
-      become: yes
       become_user: postgres
       environment:
         PGPASSWORD: "{{ db_password }}"
@@ -141,9 +207,3 @@
         psql -U {{ db_user }} -c "\l"
       register: db_list
       changed_when: false
-
-    - name: Start and enable Nginx
-      systemd:
-        name: nginx
-        state: started
-        enabled: yes
