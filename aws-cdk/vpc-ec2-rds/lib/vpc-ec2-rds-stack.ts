@@ -351,7 +351,7 @@ namespace ResourceBuilders {
       const checkPlaybookContent = fs.readFileSync('assets/ansible/playbooks/check-installation.yml', 'utf8');
       const encodedCheckPlaybook = Buffer.from(checkPlaybookContent).toString('base64');
       
-      // テンプレートファイルの内容をBase64エンコード
+      // テンプレートファイルの内容をBase64��ンコード
       const nginxConfTemplate = fs.readFileSync('assets/ansible/templates/nginx.conf.j2').toString('base64');
       const pgHbaConfTemplate = fs.readFileSync('assets/ansible/templates/pg_hba.conf.j2').toString('base64');
       

@@ -92,8 +92,23 @@ firewall-cmd --list-all
 ### Ansible実行
 ```bash
 cd /etc/ansible/playbooks
-ansible-playbook -vv main.yml          # セットアップ実行
 ansible-playbook check-installation.yml # インストール確認
+
+cd /etc/ansible/playbooks
+ansible-playbook -vv main.yml          # セットアップ実行
+
+```
+
+```
+pgAdminへのアクセス：
+URL: http://[EC2のIP]/pgadmin4/
+Email: admin@example.com
+Password: admin123
+```
+
+```
+pgAdmin: http://[EC2のIP]/pgadmin5/
+Express: http://[EC2のIP]/
 ```
 
 ## 3. デプロイコマンド

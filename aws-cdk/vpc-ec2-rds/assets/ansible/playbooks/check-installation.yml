@@ -75,6 +75,20 @@
       register: firewall_config
       changed_when: false
 
+    # pgAdmin確認
+    - name: Check pgAdmin installation
+      shell: rpm -q pgadmin4-web
+      register: pgadmin_version
+      changed_when: false
+      failed_when: false
+
+    - name: Check pgAdmin service through Nginx
+      uri:
+        url: http://localhost/pgadmin5/
+        return_content: yes
+      register: pgadmin_response
+      failed_when: false
+
     # 結果表示
     - name: Display Installation Status
       debug:
@@ -86,6 +100,8 @@
           - "Nginx Service: {{ 'Running' if not nginx_status.changed else 'Not Running' }}"
           - "Firewall Version: {{ firewall_version.stdout }}"
           - "Firewall Service: {{ 'Running' if not firewall_status.changed else 'Not Running' }}"
+          - "pgAdmin Version: {{ pgadmin_version.stdout }}"
+          - "pgAdmin Web Access: {{ 'Available' if pgadmin_response.status == 200 else 'Not Available' }}"
 
     - name: Display Database List
       debug:
