@@ -6,6 +6,7 @@ import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as elbv2_targets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as fs from 'fs';
 
 // ==========================================
 // 環境設定（頻繁に変更する設定）
@@ -342,35 +343,53 @@ namespace ResourceBuilders {
     private createUserData(): ec2.UserData {
       const userData = ec2.UserData.forLinux();
       
-      // Ansibleのプレイブックを読み込む
-      const fs = require('fs');
-      const path = require('path');
-      const playbookContent = fs.readFileSync(
-        path.join(__dirname, '../assets/ansible/playbooks/setup.yml'),
-        'utf8'
-      );
-
+      // プレイブックの内容をBase64エンコード
+      const playbookContent = fs.readFileSync('assets/ansible/playbooks/main.yml', 'utf8');
+      const encodedPlaybook = Buffer.from(playbookContent).toString('base64');
+      
       userData.addCommands(
         '#!/bin/bash',
-
-        // 1. Ansibleのインストールと初期設定
-        '# システムアップデートとAnsibleインストール',
-        'sudo dnf update -y',
-        'sudo dnf install epel-release -y',
-        'sudo dnf install ansible -y',
-
-        // 2. Ansibleプレイブックの配置
-        'mkdir -p /tmp/ansible/playbooks',
-        'cat > /tmp/ansible/playbooks/setup.yml << \'EOL\'',
-        playbookContent,
-        'EOL',
-
-        // 3. Ansibleプレイブックの実行
-        'cd /tmp/ansible',
-        'ansible-playbook playbooks/setup.yml',
-
-        // 4. クリーンアップ
-        'rm -rf /tmp/ansible'
+        
+        // cloud-initのログ設定を確認
+        'exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1',
+        
+        'echo "=== Starting UserData script execution ==="',
+        'date "+%Y-%m-%d %H:%M:%S"',
+        
+        // デバッグモード
+        'set -x',
+        
+        // システムアップデートとAnsibleインストール
+        'echo "=== Installing required packages ==="',
+        'dnf update -y',
+        'dnf install -y ansible-core',
+        
+        // Ansibleコレクションのインストール
+        'echo "=== Installing Ansible collections ==="',
+        'ansible-galaxy collection install community.general',  // 必要なコレクションをインストール
+        
+        // プレイブックの配置前にディレクトリを作成
+        'echo "=== Creating Ansible directories ==="',
+        'mkdir -p /etc/ansible/playbooks',
+        'chmod 755 /etc/ansible/playbooks',
+        
+        // プレイブックの配置
+        'echo "=== Deploying Ansible playbook ==="',
+        'echo "Creating playbook file..."',
+        `echo "${encodedPlaybook}" | base64 -d > /etc/ansible/playbooks/main.yml`,
+        'chmod 644 /etc/ansible/playbooks/main.yml',
+        
+        // プレイブックの内容確認
+        'echo "=== Verifying playbook content ==="',
+        'ls -l /etc/ansible/playbooks/main.yml',
+        'cat /etc/ansible/playbooks/main.yml',
+        
+        // Ansibleの実行
+        'echo "=== Running Ansible playbook ==="',
+        'ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook -i localhost, -c local /etc/ansible/playbooks/main.yml -v',
+        
+        'echo "=== UserData script completed ==="',
+        'date "+%Y-%m-%d %H:%M:%S"'
       );
 
       return userData;
@@ -397,7 +416,7 @@ namespace ResourceBuilders {
         ],
       }));
 
-      // Systems Manager用のポリシーも追加（推奨）
+      // Systems Manager用のポリシー
       role.addManagedPolicy(
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')
       );

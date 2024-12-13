@@ -120,3 +120,29 @@ node app.js
 aws ec2 create-key-pair --key-name training-03-key-web --query 'KeyMaterial' --output text > training-03-key-web.pem
 chmod 400 training-03-key-web.pem
 ```
+
+```
+# Node.jsのバージョン確認
+node --version
+npm --version
+
+# PostgreSQLの確認
+psql --version
+systemctl status postgresql
+sudo -u postgres psql -c "\l"  # データベース一覧
+
+# Nginxの確認
+nginx -v
+systemctl status nginx
+
+# Firewallの確認
+firewall-cmd --version
+systemctl status firewalld
+firewall-cmd --list-all  # 設定されているルールの確認
+
+# インストールされているパッケージの確認
+rpm -qa | grep nodejs
+rpm -qa | grep postgresql
+rpm -qa | grep nginx
+rpm -qa | grep firewalld
+```
