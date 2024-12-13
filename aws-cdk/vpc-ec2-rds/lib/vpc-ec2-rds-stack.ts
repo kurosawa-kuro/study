@@ -347,6 +347,10 @@ namespace ResourceBuilders {
       const playbookContent = fs.readFileSync('assets/ansible/playbooks/main.yml', 'utf8');
       const encodedPlaybook = Buffer.from(playbookContent).toString('base64');
       
+      // テンプレートファイルの内容をBase64エンコード
+      const nginxConfTemplate = fs.readFileSync('assets/ansible/templates/nginx.conf.j2').toString('base64');
+      const pgHbaConfTemplate = fs.readFileSync('assets/ansible/templates/pg_hba.conf.j2').toString('base64');
+      
       userData.addCommands(
         '#!/bin/bash',
         
@@ -366,12 +370,21 @@ namespace ResourceBuilders {
         
         // Ansibleコレクションのインストール
         'echo "=== Installing Ansible collections ==="',
-        'ansible-galaxy collection install community.general',  // 必要なコレクションをインストール
+        'ansible-galaxy collection install community.general',
         
-        // プレイブックの配置前にディレクトリを作成
+        // ディレクトリの作成
         'echo "=== Creating Ansible directories ==="',
         'mkdir -p /etc/ansible/playbooks',
+        'mkdir -p /etc/ansible/templates',
         'chmod 755 /etc/ansible/playbooks',
+        'chmod 755 /etc/ansible/templates',
+        
+        // テンプレートファイルの配置
+        'echo "=== Deploying template files ==="',
+        `echo "${nginxConfTemplate}" | base64 -d > /etc/ansible/templates/nginx.conf.j2`,
+        `echo "${pgHbaConfTemplate}" | base64 -d > /etc/ansible/templates/pg_hba.conf.j2`,
+        'chmod 644 /etc/ansible/templates/nginx.conf.j2',
+        'chmod 644 /etc/ansible/templates/pg_hba.conf.j2',
         
         // プレイブックの配置
         'echo "=== Deploying Ansible playbook ==="',

@@ -146,3 +146,53 @@ rpm -qa | grep postgresql
 rpm -qa | grep nginx
 rpm -qa | grep firewalld
 ```
+
+```
+cd /etc/ansible/playbooks
+ansible-playbook -vv main.yml
+```
+
+```
+Ansibleのプレイブックから主な設定仕様を整理します：
+
+1. **システム基本設定**
+- ホスト：localhost
+- 実行権限：sudo（become: yes）
+- パッケージ管理：dnf
+
+2. **インストールされるパッケージ**
+- PostgreSQL 15サーバー
+- Firewalld（ファイアウォール）
+- Nginx（Webサーバー）
+- Node.js 20.x
+
+3. **PostgreSQL設定**
+- データベース名：training
+- ユーザー名：postgres
+- パスワード：postgres
+- 認証方式：
+  - 初期設定時：trust
+  - 設定完了後：md5
+- 自動起動有効化
+
+4. **ファイアウォール設定**
+- サービス：自動起動有効化
+- 許可ポート：
+  - HTTP（80）
+  - HTTPS（443）
+- 設定後に自動リロード
+
+5. **Nginx設定**
+- カスタム設定ファイルを使用（nginx.conf.j2テンプレート）
+- 自動起動有効化
+
+6. **依存するテンプレートファイル**
+- `/etc/ansible/templates/pg_hba.conf.j2`
+- `/etc/ansible/templates/nginx.conf.j2`
+
+7. **実行確認項目**
+- PostgreSQLデータベースの存在確認
+- パスワード設定状態の確認
+- ファイアウォール設定の確認
+- 最終的なデータベース一覧の確認
+```
