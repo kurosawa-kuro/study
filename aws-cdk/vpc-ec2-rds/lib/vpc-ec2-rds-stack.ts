@@ -383,33 +383,33 @@ namespace ResourceBuilders {
         'chmod 755 /etc/ansible/playbooks',
         'chmod 755 /etc/ansible/templates',
         
-        // テンプレートファイルの配置
-        'echo "=== Deploying template files ==="',
-        `echo "${nginxConfTemplate}" | base64 -d > /etc/ansible/templates/nginx.conf.j2`,
-        `echo "${pgHbaConfTemplate}" | base64 -d > /etc/ansible/templates/pg_hba.conf.j2`,
-        'chmod 644 /etc/ansible/templates/nginx.conf.j2',
-        'chmod 644 /etc/ansible/templates/pg_hba.conf.j2',
+        // // テンプレートファイルの配置
+        // 'echo "=== Deploying template files ==="',
+        // `echo "${nginxConfTemplate}" | base64 -d > /etc/ansible/templates/nginx.conf.j2`,
+        // `echo "${pgHbaConfTemplate}" | base64 -d > /etc/ansible/templates/pg_hba.conf.j2`,
+        // 'chmod 644 /etc/ansible/templates/nginx.conf.j2',
+        // 'chmod 644 /etc/ansible/templates/pg_hba.conf.j2',
         
-        // プレイブックの配置
-        'echo "=== Deploying Ansible playbooks ==="',
-        'echo "Creating playbook files..."',
-        `echo "${encodedPlaybook}" | base64 -d > /etc/ansible/playbooks/main.yml`,
-        `echo "${encodedCheckPlaybook}" | base64 -d > /etc/ansible/playbooks/check-installation.yml`,
-        'chmod 644 /etc/ansible/playbooks/main.yml',
-        'chmod 644 /etc/ansible/playbooks/check-installation.yml',
+        // // プレイブックの配置
+        // 'echo "=== Deploying Ansible playbooks ==="',
+        // 'echo "Creating playbook files..."',
+        // `echo "${encodedPlaybook}" | base64 -d > /etc/ansible/playbooks/main.yml`,
+        // `echo "${encodedCheckPlaybook}" | base64 -d > /etc/ansible/playbooks/check-installation.yml`,
+        // 'chmod 644 /etc/ansible/playbooks/main.yml',
+        // 'chmod 644 /etc/ansible/playbooks/check-installation.yml',
         
-        // プレイブックの内容確認
-        'echo "=== Verifying playbook contents ==="',
-        'ls -l /etc/ansible/playbooks/',
-        'cat /etc/ansible/playbooks/main.yml',
-        'cat /etc/ansible/playbooks/check-installation.yml',
+        // // プレイブックの内容確認
+        // 'echo "=== Verifying playbook contents ==="',
+        // 'ls -l /etc/ansible/playbooks/',
+        // 'cat /etc/ansible/playbooks/main.yml',
+        // 'cat /etc/ansible/playbooks/check-installation.yml',
         
-        // Ansibleの実行
-        'echo "=== Running Ansible playbook ==="',
-        'ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook -i localhost, -c local /etc/ansible/playbooks/main.yml -v',
+        // // Ansibleの実行
+        // 'echo "=== Running Ansible playbook ==="',
+        // 'ANSIBLE_LOG_PATH=/var/log/ansible.log ansible-playbook -i localhost, -c local /etc/ansible/playbooks/main.yml -v',
         
-        'echo "=== UserData script completed ==="',
-        'date "+%Y-%m-%d %H:%M:%S"'
+        // 'echo "=== UserData script completed ==="',
+        // 'date "+%Y-%m-%d %H:%M:%S"'
       );
 
       return userData;

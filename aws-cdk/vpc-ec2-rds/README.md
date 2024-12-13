@@ -194,3 +194,42 @@ sudo nginx -t            # 構文チェック
 sudo systemctl restart nginx  # 再起動
 
 ```
+
+
+```
+# サービス設定ファイルを修正
+sudo vim /etc/systemd/system/pgadmin.service
+
+[Unit]
+Description=pgAdmin 5
+After=network.target
+
+[Service]
+Type=simple
+User=pgadmin
+Environment="PYTHONPATH=/usr/lib/pgadmin/web"
+Environment="PATH=/var/lib/pgadmin/.local/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PGADMIN_LISTEN_PORT=5050"
+Environment="PGADMIN_SETUP_EMAIL=admin@example.com"
+Environment="PGADMIN_SETUP_PASSWORD=admin123"
+ExecStart=/var/lib/pgadmin/.local/bin/pgadmin4
+WorkingDirectory=/var/lib/pgadmin
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```
+# システムデーモンの再読み込み
+sudo systemctl daemon-reload
+
+# サービスの再起動
+sudo systemctl restart pgadmin
+
+# 状態確認
+sudo systemctl status pgadmin
+
+# ログの確認
+sudo journalctl -u pgadmin -f
+```
