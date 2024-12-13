@@ -80,8 +80,8 @@
       dnf:
         name:
           - postgresql15-server
-          - nginx
           - firewalld
+          - nginx
           - nodejs
         state: present
 
