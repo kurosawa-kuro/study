@@ -1,0 +1,164 @@
+---
+- name: Setup Web Server
+  hosts: localhost
+  become: yes
+  tasks:
+    # 1. システム更新と基本開発ツール
+    - name: Update all packages
+      dnf:
+        name: "*"
+        state: latest
+        update_only: yes
+
+    - name: Upgrade all packages
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Install Development Tools
+      dnf:
+        name: "@Development Tools"
+        state: present
+
+    # PostgreSQLのセットアップ
+    - name: Install PostgreSQL
+      dnf:
+        name: 
+          - postgresql15
+          - postgresql15-server
+        state: present
+
+    - name: Initialize PostgreSQL
+      command: postgresql-setup --initdb
+      args:
+        creates: /var/lib/pgsql/data/postgresql.conf
+
+    - name: Start and enable PostgreSQL
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Set PostgreSQL environment variables
+      blockinfile:
+        path: /home/ec2-user/.bashrc
+        block: |
+          export DATABASE_DB=training
+          export DATABASE_USER=postgres
+          export DATABASE_PASSWORD=postgres
+
+    - name: Set PostgreSQL password
+      become_user: postgres
+      command: psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+    - name: Create PostgreSQL database
+      become_user: postgres
+      command: psql -c "CREATE DATABASE training;"
+
+    - name: Update pg_hba.conf authentication method
+      replace:
+        path: /var/lib/pgsql/data/pg_hba.conf
+        regexp: '{{ item.from }}'
+        replace: '{{ item.to }}'
+      loop:
+        - { from: 'ident', to: 'md5' }
+        - { from: 'peer', to: 'md5' }
+
+    - name: Restart PostgreSQL
+      systemd:
+        name: postgresql
+        state: restarted
+
+    # 2. プログラミング言語のインストール
+    # Go
+    - name: Install Go
+      dnf:
+        name: golang
+        state: present
+
+    - name: Set Go environment variables
+      blockinfile:
+        path: /home/ec2-user/.bashrc
+        block: |
+          export GOPATH=$HOME/go
+          export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
+
+    - name: Create Go directories
+      file:
+        path: "/home/ec2-user/go/{{ item }}"
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: '0755'
+      loop:
+        - bin
+        - src
+        - pkg
+
+    # Node.js
+    - name: Install Node.js and npm
+      dnf:
+        name: 
+          - nodejs
+          - npm
+        state: present
+
+    - name: Install global npm packages
+      npm:
+        name: "{{ item }}"
+        global: yes
+      loop:
+        - pm2
+        - typescript
+
+    # 3. Webサーバー設定
+    - name: Install Nginx
+      dnf:
+        name: nginx
+        state: present
+
+    - name: Start and enable Nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Create application directory
+      file:
+        path: /var/www/app
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: '0755'
+
+    # 4. コンテナ環境
+    - name: Install Docker
+      dnf:
+        name: docker
+        state: present
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ec2-user to docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/latest/download/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    # 5. モニタリングツール
+    - name: Install monitoring tools
+      dnf:
+        name: 
+          - htop
+          - amazon-cloudwatch-agent
+        state: present

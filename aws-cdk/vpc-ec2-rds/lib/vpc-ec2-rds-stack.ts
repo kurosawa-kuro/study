@@ -342,91 +342,37 @@ namespace ResourceBuilders {
     private createUserData(): ec2.UserData {
       const userData = ec2.UserData.forLinux();
       
-      // id_rsaファイルの内容を読み込む
+      // Ansibleのプレイブックを読み込む
       const fs = require('fs');
       const path = require('path');
-      const sshKeyContent = fs.readFileSync(
-        path.join(__dirname, '../assets/id_rsa'),
+      const playbookContent = fs.readFileSync(
+        path.join(__dirname, '../assets/ansible/playbooks/setup.yml'),
         'utf8'
       );
 
       userData.addCommands(
         '#!/bin/bash',
-        
-        // SSHディレクトリの作成と権限設定
-        'mkdir -p ~/.ssh',
-        'chmod 700 ~/.ssh',
-        
-        // 秘密鍵の作成
-        'cat > ~/.ssh/id_rsa << \'EOL\'',
-        sshKeyContent,
-        'EOL',
-        
-        'chmod 600 ~/.ssh/id_rsa',
-        
-        // 1. システム更新と基本開発ツール
+
+        // 1. Ansibleのインストールと初期設定
+        '# システムアップデートとAnsibleインストール',
         'sudo dnf update -y',
-        'sudo dnf upgrade -y',
-        'sudo dnf groupinstall "Development Tools" -y',
-        
-        // PostgreSQLのインストールと設定
-        'sudo dnf install -y postgresql15 postgresql15-server',
-        'sudo postgresql-setup --initdb',
-        'sudo systemctl enable postgresql',
-        'sudo systemctl start postgresql',
-        
-        // PostgreSQL環境変数の設定
-        'echo "export DATABASE_DB=training" >> /home/ec2-user/.bashrc',
-        'echo "export DATABASE_USER=postgres" >> /home/ec2-user/.bashrc',
-        'echo "export DATABASE_PASSWORD=postgres" >> /home/ec2-user/.bashrc',
-        
-        // PostgreSQLの設定
-        'sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD \'postgres\';"',
-        'sudo -u postgres psql -c "CREATE DATABASE training;"',
-        
-        // pg_hba.confの設定変更
-        'sudo sed -i "s/ident/md5/g" /var/lib/pgsql/data/pg_hba.conf',
-        'sudo sed -i "s/peer/md5/g" /var/lib/pgsql/data/pg_hba.conf',
-        
-        // PostgreSQLの再起動
-        'sudo systemctl restart postgresql',
-        
-        // 2. プログラミング言語のインストール
-        // Go
-        'sudo dnf install -y golang',
-        'echo "export GOPATH=$HOME/go" >> /home/ec2-user/.bashrc',
-        'echo "export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin" >> /home/ec2-user/.bashrc',
-        'mkdir -p /home/ec2-user/go/{bin,src,pkg}',
-        'chown -R ec2-user:ec2-user /home/ec2-user/go',
-        
-        // Node.js
-        'sudo dnf install -y nodejs npm',
-        'sudo npm install -g pm2 typescript',
-        
-        // 3. Webサーバー設定
-        // Nginxのセットアップ
-        'sudo dnf install -y nginx',
-        'sudo systemctl enable nginx',
-        'sudo systemctl start nginx',
-        
-        // アプリケーションディレクトリ
-        'sudo mkdir -p /var/www/app',
-        'sudo chown ec2-user:ec2-user /var/www/app',
-        
-        // 4. コンテナ環境
-        // Docker
-        'sudo dnf install -y docker',
-        'sudo systemctl enable docker',
-        'sudo systemctl start docker',
-        'sudo usermod -aG docker ec2-user',
-        
-        // Docker Compose
-        'sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose',
-        'sudo chmod +x /usr/local/bin/docker-compose',
-        
-        // 5. モニタリングツール
-        'sudo dnf install -y htop amazon-cloudwatch-agent'
+        'sudo dnf install epel-release -y',
+        'sudo dnf install ansible -y',
+
+        // 2. Ansibleプレイブックの配置
+        'mkdir -p /tmp/ansible/playbooks',
+        'cat > /tmp/ansible/playbooks/setup.yml << \'EOL\'',
+        playbookContent,
+        'EOL',
+
+        // 3. Ansibleプレイブックの実行
+        'cd /tmp/ansible',
+        'ansible-playbook playbooks/setup.yml',
+
+        // 4. クリーンアップ
+        'rm -rf /tmp/ansible'
       );
+
       return userData;
     }
 
@@ -471,6 +417,10 @@ namespace ResourceBuilders {
         keyName: this.config.keyName,
         userData: this.createUserData(),
         role: role,
+        blockDevices: [{
+          deviceName: '/dev/xvda',
+          volume: ec2.BlockDeviceVolume.ebs(20),
+        }],
       });
 
       new ec2.CfnEIP(this.scope, 'WebServerEIP', {
