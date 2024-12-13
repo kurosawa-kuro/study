@@ -1,20 +1,99 @@
 # AWS CDK 作業手順書
 
-## 1. 前提条件
-- AWS CLIがインストール済み
-- AWS認証情報が設定済み
-- CDKプロジェクトが初期化済み
+AWS CDKとインフラ構築の手順書を以下のように整理しました：
 
-## 2. キーペアの作成
+# AWS環境構築手順書
+
+## 1. 準備作業
+- AWS CLI導入済みであること
+- AWS認証情報設定済みであること
+- CDKプロジェクト初期化済みであること
+
+## 2. EC2アクセス用キーペア作成
 ```bash
-# EC2インスタンス用のキーペア作成
-aws ec2 create-key-pair \
-  --key-name training-03-key-web \
-  --query 'KeyMaterial' \
-  --output text > training-03-key-web.pem
+# キーペア作成
+aws ec2 create-key-pair --key-name training-03-key-web --query 'KeyMaterial' --output text > training-03-key-web.pem
 
-# キーペアのパーミッション設定（セキュリティ要件）
+# セキュリティ設定
 chmod 400 training-03-key-web.pem
+```
+
+## 3. インフラのデプロイ
+```bash
+# 初回デプロイ
+cdk bootstrap && cdk deploy --require-approval never
+
+# 完全リセット時
+cdk destroy --force && cdk bootstrap && cdk deploy --require-approval never
+```
+
+## 4. サーバー設定
+
+### Webサーバー（Nginx）設定
+1. バックアップ作成
+2. 基本設定ファイル配置
+3. Express用リバースプロキシ設定
+   - ポート80でListen
+   - アップロードサイズ10MB制限
+   - タイムアウト300秒
+
+### アプリケーション設定
+1. サンプルアプリのクローン
+2. 依存パッケージインストール
+3. 環境変数設定
+4. DBマイグレーション実行
+5. アプリケーション起動
+
+## 5. 構成内容
+
+### システム基本設定
+- 実行環境：localhost
+- 権限：sudo使用
+- パッケージ管理：dnf
+
+### インストールパッケージ
+- PostgreSQL 15
+- Firewalld
+- Nginx
+- Node.js 20.x
+
+### データベース（PostgreSQL）
+- DB名：training
+- ユーザー：postgres
+- パスワード：postgres
+- 認証方式：trust → md5
+- 自動起動設定
+
+### セキュリティ（Firewalld）
+- HTTP/HTTPS許可
+- 自動起動設定
+
+## 6. 動作確認コマンド
+
+### 基本確認
+```bash
+# Node.js
+node --version
+npm --version
+
+# PostgreSQL
+psql --version
+systemctl status postgresql
+sudo -u postgres psql -c "\l"
+
+# Nginx
+nginx -v
+systemctl status nginx
+
+# Firewall
+firewall-cmd --list-all
+```
+
+### Ansible実行
+```bash
+cd /etc/ansible/playbooks
+ansible-playbook -vv main.yml          # セットアップ実行
+ansible-playbook check-installation.yml # インストール確認
 ```
 
 ## 3. デプロイコマンド
@@ -99,100 +178,4 @@ EOF
 sudo nginx -t            # 構文チェック
 sudo systemctl restart nginx  # 再起動
 
-```
-
-```
-git clone https://github.com/kurosawa-kuro/enviroment.git
-cd enviroment/sample/nodejs/express-uploader
-npm install
-
-# .envファイルの作成
-
-# データベースのマイグレーション
-npx prisma migrate dev --name init
-npx prisma generate
-
-# アプリケーションの起動
-node app.js
-```
-
-```
-aws ec2 create-key-pair --key-name training-03-key-web --query 'KeyMaterial' --output text > training-03-key-web.pem
-chmod 400 training-03-key-web.pem
-```
-
-```
-# Node.jsのバージョン確認
-node --version
-npm --version
-
-# PostgreSQLの確認
-psql --version
-systemctl status postgresql
-sudo -u postgres psql -c "\l"  # データベース一覧
-
-# Nginxの確認
-nginx -v
-systemctl status nginx
-
-# Firewallの確認
-firewall-cmd --version
-systemctl status firewalld
-firewall-cmd --list-all  # 設定されているルールの確認
-
-# インストールされているパッケージの確認
-rpm -qa | grep nodejs
-rpm -qa | grep postgresql
-rpm -qa | grep nginx
-rpm -qa | grep firewalld
-```
-
-```
-cd /etc/ansible/playbooks
-ansible-playbook -vv main.yml
-```
-
-```
-Ansibleのプレイブックから主な設定仕様を整理します：
-
-1. **システム基本設定**
-- ホスト：localhost
-- 実行権限：sudo（become: yes）
-- パッケージ管理：dnf
-
-2. **インストールされるパッケージ**
-- PostgreSQL 15サーバー
-- Firewalld（ファイアウォール）
-- Nginx（Webサーバー）
-- Node.js 20.x
-
-3. **PostgreSQL設定**
-- データベース名：training
-- ユーザー名：postgres
-- パスワード：postgres
-- 認証方式：
-  - 初期設定時：trust
-  - 設定完了後：md5
-- 自動起動有効化
-
-4. **ファイアウォール設定**
-- サービス：自動起動有効化
-- 許可ポート：
-  - HTTP（80）
-  - HTTPS（443）
-- 設定後に自動リロード
-
-5. **Nginx設定**
-- カスタム設定ファイルを使用（nginx.conf.j2テンプレート）
-- 自動起動有効化
-
-6. **依存するテンプレートファイル**
-- `/etc/ansible/templates/pg_hba.conf.j2`
-- `/etc/ansible/templates/nginx.conf.j2`
-
-7. **実行確認項目**
-- PostgreSQLデータベースの存在確認
-- パスワード設定状態の確認
-- ファイアウォール設定の確認
-- 最終的なデータベース一覧の確認
 ```

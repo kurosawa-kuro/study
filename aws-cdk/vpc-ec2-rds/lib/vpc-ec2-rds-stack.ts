@@ -347,6 +347,10 @@ namespace ResourceBuilders {
       const playbookContent = fs.readFileSync('assets/ansible/playbooks/main.yml', 'utf8');
       const encodedPlaybook = Buffer.from(playbookContent).toString('base64');
       
+      // テェック用プレイブックの内容をBase64エンコード
+      const checkPlaybookContent = fs.readFileSync('assets/ansible/playbooks/check-installation.yml', 'utf8');
+      const encodedCheckPlaybook = Buffer.from(checkPlaybookContent).toString('base64');
+      
       // テンプレートファイルの内容をBase64エンコード
       const nginxConfTemplate = fs.readFileSync('assets/ansible/templates/nginx.conf.j2').toString('base64');
       const pgHbaConfTemplate = fs.readFileSync('assets/ansible/templates/pg_hba.conf.j2').toString('base64');
@@ -387,15 +391,18 @@ namespace ResourceBuilders {
         'chmod 644 /etc/ansible/templates/pg_hba.conf.j2',
         
         // プレイブックの配置
-        'echo "=== Deploying Ansible playbook ==="',
-        'echo "Creating playbook file..."',
+        'echo "=== Deploying Ansible playbooks ==="',
+        'echo "Creating playbook files..."',
         `echo "${encodedPlaybook}" | base64 -d > /etc/ansible/playbooks/main.yml`,
+        `echo "${encodedCheckPlaybook}" | base64 -d > /etc/ansible/playbooks/check-installation.yml`,
         'chmod 644 /etc/ansible/playbooks/main.yml',
+        'chmod 644 /etc/ansible/playbooks/check-installation.yml',
         
         // プレイブックの内容確認
-        'echo "=== Verifying playbook content ==="',
-        'ls -l /etc/ansible/playbooks/main.yml',
+        'echo "=== Verifying playbook contents ==="',
+        'ls -l /etc/ansible/playbooks/',
         'cat /etc/ansible/playbooks/main.yml',
+        'cat /etc/ansible/playbooks/check-installation.yml',
         
         // Ansibleの実行
         'echo "=== Running Ansible playbook ==="',
