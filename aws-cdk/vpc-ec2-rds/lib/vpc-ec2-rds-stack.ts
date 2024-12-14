@@ -12,7 +12,7 @@ dotenv.config();
 
 // 環境設定
 class EnvironmentConfig {
-  static readonly ENV = process.env.ENVIRONMENT;
+  static readonly ENV = process.env.ENVIRONMENT || 'default';
   
   static {
     if (!this.ENV) {

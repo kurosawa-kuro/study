@@ -1,4 +1,4 @@
-.PHONY: deploy reset help
+.PHONY: deploy reset destroy-all help
 
 # デフォルトのターゲット
 .DEFAULT_GOAL := help
@@ -12,6 +12,9 @@ deploy: ## 通常デプロイ（初回または更新時）
 
 reset: ## 完全リセット（既存リソースを削除して再デプロイ）
 	cdk destroy --force && cdk bootstrap && cdk deploy --require-approval never
+
+destroy-all: ## すべてのスタックを完全に削除
+	cdk destroy --force "*"
 
 help: ## コマンド一覧を表示
 	@echo "Usage: make [target]"

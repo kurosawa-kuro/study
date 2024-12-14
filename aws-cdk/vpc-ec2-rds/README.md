@@ -35,6 +35,7 @@ chmod 400 training-04-key-web.pem
 ### 2.2 CDKによるデプロイ
 ```bash
 # 通常デプロイ
+export ENVIRONMENT=training-01-stg
 cdk bootstrap && cdk deploy --require-approval never
 
 # 完全リセット（再デプロイ）
