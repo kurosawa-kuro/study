@@ -1,235 +1,96 @@
-# AWS CDK 作業手順書
+# AWS CDK インフラ構築手順書
 
-AWS CDKとインフラ構築の手順書を以下のように整理しました：
+## 1. 事前準備
+### 1.1 必要な環境
+- AWS CLIのインストールと設定
+- AWS認証情報の設定
+- Node.jsとnpm
+- CDKプロジェクトの初期化
 
-# AWS環境構築手順書
-
-## 1. 準備作業
-- AWS CLI導入済みであること
-- AWS認証情報設定済みであること
-- CDKプロジェクト初期化済みであること
-
-## 2. EC2アクセス用キーペア作成
+### 1.2 環境変数の設定
 ```bash
-# キーペア作成
-aws ec2 create-key-pair --key-name training --query 'KeyMaterial' --output text > training.pem
+# 必須の環境変数
+ENVIRONMENT=       # 環境名（例：training-04）
+ENABLE_RDS=       # RDSの有効化（true/false）
+ENABLE_EIP=       # Elastic IPの有効化（true/false）
+SSH_KEY_NAME=     # SSHキーペア名
+DATABASE_NAME=    # データベース名
+DATABASE_USERNAME= # DBユーザー名
+DATABASE_PASSWORD= # DBパスワード
+```
 
-# セキュリティ設定
+## 2. インフラ構築手順
+### 2.1 SSH接続用キーペアの作成
+```bash
+# キーペアの作成
+aws ec2 create-key-pair \
+  --key-name training \
+  --query 'KeyMaterial' \
+  --output text > training.pem
+
+# 権限の設定
 chmod 400 training-04-key-web.pem
 ```
 
-## 3. インフラのデプロイ
+### 2.2 CDKによるデプロイ
 ```bash
-# 初回デプロイ
+# 通常デプロイ
 cdk bootstrap && cdk deploy --require-approval never
 
-# 完全リセット時
+# 完全リセット（再デプロイ）
 cdk destroy --force && cdk bootstrap && cdk deploy --require-approval never
 ```
 
-## 4. サーバー設定
-
-### Webサーバー（Nginx）設定
-1. バックアップ作成
-2. 基本設定ファイル配置
-3. Express用リバースプロキシ設定
-   - ポート80でListen
-   - アップロードサイズ10MB制限
-   - タイムアウト300秒
-
-### アプリケーション設定
-1. サンプルアプリのクローン
-2. 依存パッケージインストール
-3. 環境変数設定
-4. DBマイグレーション実行
-5. アプリケーション起動
-
-## 5. 構成内容
-
-### システム基本設定
-- 実行環境：localhost
-- 権限：sudo使用
-- パッケージ管理：dnf
-
-### インストールパッケージ
-- PostgreSQL 15
-- Firewalld
-- Nginx
-- Node.js 20.x
-
-### データベース（PostgreSQL）
-- DB名：training
-- ユーザー：postgres
-- パスワード：postgres
-- 認証方式：trust → md5
-- 自動起動設定
-
-### セキュリティ（Firewalld）
-- HTTP/HTTPS許可
-- 自動起動設定
-
-## 6. 動作確認コマンド
-
-### 基本確認
+### 2.3 初期設定の確認
 ```bash
-# Node.js
+# 基本サービスの確認
 node --version
 npm --version
-
-# PostgreSQL
 psql --version
-systemctl status postgresql
-sudo -u postgres psql -c "\l"
-
-# Nginx
 nginx -v
-systemctl status nginx
 
-# Firewall
+# サービスの状態確認
+systemctl status postgresql
+systemctl status nginx
 firewall-cmd --list-all
 ```
 
-### Ansible実行
-```bash
-cd /etc/ansible/playbooks
-ansible-playbook check-installation.yml # インストール確認
+## 3. 各種サービスの設定
+### 3.1 Nginxの設定
+- 基本設定ファイルの作成
+- リバースプロキシの設定
+- アップロード制限の設定（10MB）
+- タイムアウト設定（300秒）
 
-cd /etc/ansible/playbooks
-ansible-playbook -vv main.yml          # セットアップ実行
+### 3.2 pgAdminの設定
+- サービス設定ファイルの作成
+- 環境変数の設定
+- システムサービスの登録と起動
 
+### 3.3 アクセス情報
 ```
-
-```
-pgAdminへのアクセス：
+# pgAdmin
 URL: http://[EC2のIP]/pgadmin4/
-Email: admin@example.com
-Password: admin123
+メール: admin@example.com
+パスワード: admin123
+
+# アプリケーション
+Express API: http://[EC2のIP]/
 ```
 
-```
-pgAdmin: http://[EC2のIP]/pgadmin5/
-Express: http://[EC2のIP]/
-```
+## 4. インフラ構成仕様
+### 4.1 ネットワーク
+- VPC: 10.0.0.0/16
+- パブリックサブネット: 10.0.10.0/24, 10.0.11.0/24
+- プライベートサブネット: 10.0.20.0/24, 10.0.21.0/24
 
-## 3. デプロイコマンド
+### 4.2 コンピューティング
+- EC2: t2.micro, Amazon Linux 2023
+- RDS: PostgreSQL 12, t3.micro
+- S3: プライベートバケット
 
-### 通常デプロイ
-```bash
-# ブートストラップとデプロイを実行（承認なし）
-cdk bootstrap && cdk deploy --require-approval never
-```
+### 4.3 セキュリティ
+- Webサーバー: SSH(22), HTTP(80)
+- データベース: PostgreSQL(5432)からのアクセスのみ許可
 
-### 再デプロイ（完全リセット）
-```bash
-# スタックの削除、再ブートストラップ、再デプロイを一括実行
-cdk destroy --force && cdk bootstrap && cdk deploy --require-approval never
-```
-
-
-```
-# Nginxの設定
-
-# 設定ファイルの作成
-sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup.$(date +%Y%m%d_%H%M%S)
-
-sudo tee /etc/nginx/nginx.conf << 'EOF'
-user nginx;
-worker_processes auto;
-error_log /var/log/nginx/error.log notice;
-pid /run/nginx.pid;
-
-# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
-include /usr/share/nginx/modules/*.conf;
-
-events {
-   worker_connections 1024;
-}
-
-http {
-   log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                     '$status $body_bytes_sent "$http_referer" '
-                     '"$http_user_agent" "$http_x_forwarded_for"';
-
-   access_log  /var/log/nginx/access.log  main;
-   sendfile            on;
-   tcp_nopush          on;
-   keepalive_timeout   65;
-   types_hash_max_size 4096;
-
-   include             /etc/nginx/mime.types;
-   default_type        application/octet-stream;
-
-   # Load modular configuration files from the /etc/nginx/conf.d directory.
-   include /etc/nginx/conf.d/*.conf;
-}
-EOF
-
-sudo tee /etc/nginx/conf.d/express-api.conf << 'EOF'
-# /etc/nginx/conf.d/express.conf
-server {
-    listen 80;
-    server_name _;
-
-    # クライアントリクエストボディサイズの制限を設定
-    client_max_body_size 10M;  # 10MBまで許可
-
-    location / {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-
-        # アップロードのタイムアウト設定
-        proxy_read_timeout 300;
-        proxy_connect_timeout 300;
-        proxy_send_timeout 300;
-    }
-}
-EOF
-
-# 設定の反映
-sudo nginx -t            # 構文チェック
-sudo systemctl restart nginx  # 再起動
-
-```
-
-
-```
-# サービス設定ファイルを修正
-sudo vim /etc/systemd/system/pgadmin.service
-
-[Unit]
-Description=pgAdmin 5
-After=network.target
-
-[Service]
-Type=simple
-User=pgadmin
-Environment="PYTHONPATH=/usr/lib/pgadmin/web"
-Environment="PATH=/var/lib/pgadmin/.local/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="PGADMIN_LISTEN_PORT=5050"
-Environment="PGADMIN_SETUP_EMAIL=admin@example.com"
-Environment="PGADMIN_SETUP_PASSWORD=admin123"
-ExecStart=/var/lib/pgadmin/.local/bin/pgadmin4
-WorkingDirectory=/var/lib/pgadmin
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```
-# システムデーモンの再読み込み
-sudo systemctl daemon-reload
-
-# サービスの再起動
-sudo systemctl restart pgadmin
-
-# 状態確認
-sudo systemctl status pgadmin
-
-# ログの確認
-sudo journalctl -u pgadmin -f
-```
+このドキュメントは、実行順序に沿って整理し、各セクションの依存関係を考慮した構成としています。
