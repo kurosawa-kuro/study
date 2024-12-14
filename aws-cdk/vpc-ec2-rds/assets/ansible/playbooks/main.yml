@@ -11,11 +11,11 @@
 
   tasks:
     # System Update and Package Installation
-    - name: Update all packages
-      dnf:
-        name: "*"
-        state: latest
-        update_cache: yes
+    # - name: Update all packages
+    #   dnf:
+    #     name: "*"
+    #     state: latest
+    #     update_cache: yes
       
     - name: Install NodeSource repository
       shell: |

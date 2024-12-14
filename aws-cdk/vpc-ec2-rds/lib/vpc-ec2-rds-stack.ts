@@ -204,7 +204,7 @@ class InfrastructureBuilder {
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       '#!/bin/bash',
-      'dnf update -y',
+      // 'dnf update -y',
       'dnf install -y ansible-core',
       'ansible-galaxy collection install community.general'
     );
