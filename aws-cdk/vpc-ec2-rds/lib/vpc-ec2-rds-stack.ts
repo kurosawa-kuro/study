@@ -14,13 +14,25 @@ dotenv.config();
 // 環境設定
 class EnvironmentConfig {
   static readonly ENV = process.env.ENVIRONMENT || 'training-04';
+  
   static readonly FEATURES = {
-    enableRds: process.env.ENABLE_RDS === 'true',
-    enableEip: process.env.ENABLE_EIP === 'true',
+    enableRds: process.env.ENABLE_RDS ? process.env.ENABLE_RDS === 'true' : false,
+    enableEip: process.env.ENABLE_EIP ? process.env.ENABLE_EIP === 'true' : false,
   };
+
   static readonly REGION = {
     primary: 'ap-northeast-1',
     availabilityZones: ['ap-northeast-1a', 'ap-northeast-1c'],
+  };
+
+  static readonly EC2 = {
+    keyName: process.env.SSH_KEY_NAME || this.getResourceName('key-web'),
+  };
+
+  static readonly RDS = {
+    databaseName: process.env.DATABASE_NAME || 'training',
+    username: process.env.DATABASE_USERNAME || 'postgres',
+    password: process.env.DATABASE_PASSWORD || 'postgres',
   };
 
   static getResourceName(resourceType: string, suffix?: string): string {
@@ -28,7 +40,7 @@ class EnvironmentConfig {
   }
 }
 
-// リソース設定
+// リソース設定（環境に依存しない定数的な設定）
 class ResourceConfig {
   static readonly VPC = {
     cidr: '10.0.0.0/16',
@@ -60,13 +72,6 @@ class ResourceConfig {
 
   static readonly EC2 = {
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
-    keyName: process.env.SSH_KEY_NAME || EnvironmentConfig.getResourceName('key-web'),
-  };
-
-  static readonly RDS = {
-    databaseName: process.env.DATABASE_NAME || 'training',
-    username: process.env.DATABASE_USERNAME || 'postgres',
-    password: process.env.DATABASE_PASSWORD || 'postgres',
   };
 }
 
