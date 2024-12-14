@@ -12,10 +12,10 @@ AWS CDKとインフラ構築の手順書を以下のように整理しました�
 ## 2. EC2アクセス用キーペア作成
 ```bash
 # キーペア作成
-aws ec2 create-key-pair --key-name training-03-key-web --query 'KeyMaterial' --output text > training-03-key-web.pem
+aws ec2 create-key-pair --key-name training-04-key-web --query 'KeyMaterial' --output text > training-04-key-web.pem
 
 # セキュリティ設定
-chmod 400 training-03-key-web.pem
+chmod 400 training-04-key-web.pem
 ```
 
 ## 3. インフラのデプロイ

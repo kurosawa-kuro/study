@@ -7,13 +7,19 @@ import * as elbv2_targets from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as fs from 'fs';
+import * as dotenv from 'dotenv';
+import 'dotenv/config';
+
+// 環境変数を読み込む
+dotenv.config();
 
 // ==========================================
-// 環境設定（頻繁に変更する設定）
+// 環境設定（環境変数から取得）
 // ==========================================
-const ENVIRONMENT = 'training-03';
+const ENVIRONMENT = process.env.ENVIRONMENT || 'training-04';
 const FEATURES = {
-  enableRds: false,  // RDSインスタンスの有効/無効
+  enableRds: process.env.ENABLE_RDS === 'true',  // 文字列'true'の場合のみtrue
+  enableEip: process.env.ENABLE_EIP === 'true',  // EIPの制御を追加
 };
 // ==========================================
 
@@ -50,10 +56,6 @@ namespace Config {
         name: string;
         ingressRules: SecurityGroupRule[];
       };
-      alb: {
-        name: string;
-        ingressRules: SecurityGroupRule[];
-      };
     }
 
     export interface EC2Config {
@@ -67,12 +69,6 @@ namespace Config {
       databaseName: string;
       username: string;
       password: string;
-    }
-
-    export interface ALBConfig {
-      name: string;
-      targetGroupName: string;
-      healthCheckPath: string;
     }
 
     export interface S3Config {
@@ -102,7 +98,7 @@ namespace Config {
     }
 
     static readonly region = {
-      primary: 'ap-northeast-1',
+      primary: 'ap-northeast-1',  // 直接リージョンを指定
       availabilityZones: ['ap-northeast-1a', 'ap-northeast-1c'],
     };
   }
@@ -152,30 +148,19 @@ namespace Config {
           { port: 5432, source: 'sg-web', description: 'Allow PostgreSQL from web server' },
         ],
       },
-      alb: {
-        name: Environment.getResourceName('sg-alb'),
-        ingressRules: [
-          { port: 80, source: '0.0.0.0/0', description: 'Allow HTTP from anywhere' },
-        ],
-      },
     };
 
     static readonly compute = {
       ec2: {
         name: Environment.getResourceName('instance-web'),
         instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
-        keyName: Environment.getResourceName('key-web'),
+        keyName: process.env.SSH_KEY_NAME || Environment.getResourceName('key-web'),
       },
       rds: {
         instanceIdentifier: Environment.getResourceName('instance-postgresql'),
-        databaseName: 'training',
-        username: 'postgres',
-        password: 'postgres',
-      },
-      alb: {
-        name: Environment.getResourceName('alb'),
-        targetGroupName: Environment.getResourceName('tg'),
-        healthCheckPath: '/api/health',
+        databaseName: process.env.DATABASE_NAME || 'training',
+        username: process.env.DATABASE_USERNAME || 'postgres',
+        password: process.env.DATABASE_PASSWORD || 'postgres',
       }
     };
 
@@ -263,7 +248,6 @@ namespace ResourceBuilders {
     private readonly securityGroups: {
       webServerSg?: ec2.SecurityGroup;
       dbServerSg?: ec2.SecurityGroup;
-      albSg?: ec2.SecurityGroup;
     } = {};
 
     constructor(
@@ -277,7 +261,6 @@ namespace ResourceBuilders {
     build() {
       this.createWebServerSecurityGroup();
       this.createDbServerSecurityGroup();
-      this.createAlbSecurityGroup();
       return this.securityGroups;
     }
 
@@ -311,23 +294,6 @@ namespace ResourceBuilders {
         'Allow PostgreSQL from web server'
       );
     }
-
-    private createAlbSecurityGroup() {
-      const sg = new ec2.SecurityGroup(this.scope, 'AlbSecurityGroup', {
-        vpc: this.vpc,
-        securityGroupName: this.config.alb.name,
-        description: 'Security group for ALB'
-      });
-      this.securityGroups.albSg = sg;
-
-      this.config.alb.ingressRules.forEach(rule => {
-        sg.addIngressRule(
-          ec2.Peer.ipv4(rule.source),
-          ec2.Port.tcp(rule.port),
-          rule.description
-        );
-      });
-    }
   }
 
   export class EC2 extends Base {
@@ -351,7 +317,7 @@ namespace ResourceBuilders {
       const checkPlaybookContent = fs.readFileSync('assets/ansible/playbooks/check-installation.yml', 'utf8');
       const encodedCheckPlaybook = Buffer.from(checkPlaybookContent).toString('base64');
       
-      // テンプレートファイルの内容をBase64��ンコード
+      // テンプレートファイルの内容をBase64エンコード
       const nginxConfTemplate = fs.readFileSync('assets/ansible/templates/nginx.conf.j2').toString('base64');
       const pgHbaConfTemplate = fs.readFileSync('assets/ansible/templates/pg_hba.conf.j2').toString('base64');
       
@@ -372,7 +338,7 @@ namespace ResourceBuilders {
         'dnf update -y',
         'dnf install -y ansible-core',
         
-        // Ansibleコレクションのインストール
+        // Ansibleコレクションインスール
         'echo "=== Installing Ansible collections ==="',
         'ansible-galaxy collection install community.general',
         
@@ -462,10 +428,13 @@ namespace ResourceBuilders {
         }],
       });
 
-      new ec2.CfnEIP(this.scope, 'WebServerEIP', {
-        instanceId: instance.instanceId,
-        tags: [{ key: 'Name', value: `${Config.Environment.ENV}-eip-web` }],
-      });
+      // EIPの作成を条件付きに
+      if (FEATURES.enableEip) {
+        new ec2.CfnEIP(this.scope, 'WebServerEIP', {
+          instanceId: instance.instanceId,
+          tags: [{ key: 'Name', value: `${Config.Environment.ENV}-eip-web` }],
+        });
+      }
 
       return instance;
     }
