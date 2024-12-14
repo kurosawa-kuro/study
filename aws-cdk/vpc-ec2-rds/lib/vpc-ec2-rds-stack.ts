@@ -144,6 +144,8 @@ class InfrastructureBuilder {
       }],
     });
 
+    cdk.Tags.of(instance).add('Name', EnvironmentConfig.getResourceName('instance-web'));
+
     if (EnvironmentConfig.FEATURES.enableEip) {
       new ec2.CfnEIP(this.scope, 'WebServerEIP', {
         instanceId: instance.instanceId,
