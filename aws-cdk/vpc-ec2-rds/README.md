@@ -23,13 +23,20 @@ DATABASE_PASSWORD= # DBパスワード
 ### 2.1 SSH接続用キーペアの作成
 ```bash
 # キーペアの作成
+# 既存のキーペアの削除（もし存在する場合）
+aws ec2 delete-key-pair --key-name training
+
+# 新しいキーペアの作成
 aws ec2 create-key-pair \
   --key-name training \
   --query 'KeyMaterial' \
   --output text > training.pem
 
-# 権限の設定
-chmod 400 training-04-key-web.pem
+# 権限設定
+chmod 400 training.pem
+
+# 内容確認（秘密鍵が表示されることを確認）
+cat training.pem
 ```
 
 ### 2.2 CDKによるデプロイ
@@ -39,6 +46,7 @@ export ENVIRONMENT=training-01-stg
 cdk bootstrap && cdk deploy --require-approval never
 
 # 完全リセット（再デプロイ）
+export ENVIRONMENT=training-01-stg
 cdk destroy --force && cdk bootstrap && cdk deploy --require-approval never
 ```
 
