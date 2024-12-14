@@ -136,7 +136,7 @@ class InfrastructureBuilder {
       instanceType: ResourceConfig.EC2.instanceType,
       machineImage: ec2.MachineImage.latestAmazonLinux2023(),
       securityGroup: sg,
-      keyName: ResourceConfig.EC2.keyName,
+      keyName: EnvironmentConfig.EC2.keyName,
       userData: this.createUserData(),
       role,
       blockDevices: [{
@@ -165,10 +165,10 @@ class InfrastructureBuilder {
       securityGroups: [sg],
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       instanceIdentifier: EnvironmentConfig.getResourceName('instance-postgresql'),
-      databaseName: ResourceConfig.RDS.databaseName,
+      databaseName: EnvironmentConfig.RDS.databaseName,
       credentials: {
-        username: ResourceConfig.RDS.username,
-        password: cdk.SecretValue.unsafePlainText(ResourceConfig.RDS.password),
+        username: EnvironmentConfig.RDS.username,
+        password: cdk.SecretValue.unsafePlainText(EnvironmentConfig.RDS.password),
       },
       multiAz: false,
       allocatedStorage: 20,
