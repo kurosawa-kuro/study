@@ -11,11 +11,11 @@
 
   tasks:
     # System Update and Package Installation
-    # - name: Update all packages
-    #   dnf:
-    #     name: "*"
-    #     state: latest
-    #     update_cache: yes
+    - name: Update all packages
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
       
     - name: Install NodeSource repository
       shell: |
@@ -205,12 +205,29 @@
         owner: pgadmin
         group: pgadmin
 
+    - name: Upgrade pip
+      pip:
+        name: pip
+        state: latest
+      become: yes
+
+    - name: Install required Python packages for pgAdmin
+      pip:
+        name:
+          - setuptools
+          - wheel
+          - cryptography
+        state: latest
+      become: yes
+
     - name: Install pgAdmin5 using pip
       pip:
         name: pgadmin4
         state: present
-        extra_args: --user
-      become_user: pgadmin
+        extra_args: "--no-cache-dir"  # キャッシュを使用しない
+      become: yes  # rootとして実行
+      environment:
+        PATH: "/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin"
 
     - name: Initialize pgAdmin database
       shell: |
