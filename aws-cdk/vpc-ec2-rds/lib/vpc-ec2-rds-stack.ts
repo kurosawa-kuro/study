@@ -12,8 +12,14 @@ dotenv.config();
 
 // 環境設定
 class EnvironmentConfig {
-  static readonly ENV = process.env.ENVIRONMENT || 'training-04';
+  static readonly ENV = process.env.ENVIRONMENT;
   
+  static {
+    if (!this.ENV) {
+      throw new Error('ENVIRONMENT variable must be set');
+    }
+  }
+
   static readonly FEATURES = {
     enableRds: process.env.ENABLE_RDS ? process.env.ENABLE_RDS === 'true' : false,
     enableEip: process.env.ENABLE_EIP ? process.env.ENABLE_EIP === 'true' : false,
@@ -42,15 +48,27 @@ class EnvironmentConfig {
 // リソース設定（環境に依存しない定数的な設定）
 class ResourceConfig {
   static readonly VPC = {
-    cidr: '10.0.0.0/16',
+    cidr: process.env.VPC_CIDR || '10.0.0.0/16',
     subnets: {
       public: [
-        { cidr: '10.0.10.0/24', az: 'ap-northeast-1a' },
-        { cidr: '10.0.11.0/24', az: 'ap-northeast-1c' },
+        { 
+          cidr: process.env.VPC_PUBLIC_SUBNET_1_CIDR || '10.0.1.0/24', 
+          az: 'ap-northeast-1a' 
+        },
+        { 
+          cidr: process.env.VPC_PUBLIC_SUBNET_2_CIDR || '10.0.2.0/24', 
+          az: 'ap-northeast-1c' 
+        },
       ],
       private: [
-        { cidr: '10.0.20.0/24', az: 'ap-northeast-1a' },
-        { cidr: '10.0.21.0/24', az: 'ap-northeast-1c' },
+        { 
+          cidr: process.env.VPC_PRIVATE_SUBNET_1_CIDR || '10.0.11.0/24', 
+          az: 'ap-northeast-1a' 
+        },
+        { 
+          cidr: process.env.VPC_PRIVATE_SUBNET_2_CIDR || '10.0.12.0/24', 
+          az: 'ap-northeast-1c' 
+        },
       ],
     },
   };
@@ -215,7 +233,7 @@ class InfrastructureBuilder {
 // メインのスタッククラス
 export class VpcEc2RdsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+    super(scope, `${id}-${EnvironmentConfig.ENV}`, props);
 
     const builder = new InfrastructureBuilder(this);
 
