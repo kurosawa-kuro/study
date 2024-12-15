@@ -16,35 +16,74 @@
 - S3バケット: training-01-bucket-trail
 
 ## 2. ネットワーク構成
-### 2.1 VPC設定
-- 名前タグ: training-01-vpc
-- IPv4 CIDR: 10.0.0.0/16
-- DNS設定: 有効
+はい、その設定順序は論理的に正しいですが、もう少し詳細に分解して、依存関係を明確にした順序を提案させていただきます：
 
-### 2.2 インターネットゲートウェイ設定
-- 名前タグ: training-01-igw
+# AWSネットワーク構成手順
 
-### 2.3 サブネット設定
-#### パブリックサブネット
-- 名前タグ: training-01-subnet-pub-1a
-- AZ: ap-northeast-1a
-- CIDR: 10.0.10.0/24
+## 1. VPC作成（基盤）
+```
+名前: training-01-vpc
+CIDR: 10.0.0.0/16
+DNS設定: 
+- DNS解決: 有効
+- DNS hostname: 有効
+```
 
-#### プライベートサブネット
-- 名前タグ: training-01-subnet-pri-1a
-- AZ: ap-northeast-1a
-- CIDR: 10.0.20.0/24
+## 2. インターネットゲートウェイ
+```
+名前: training-01-igw
+↓
+VPCにアタッチ: training-01-vpc
+```
 
-- 名前タグ: training-01-subnet-pri-1c
-- AZ: ap-northeast-1c
-- CIDR: 10.0.21.0/24
+## 3. サブネット作成
+### 3.1 パブリックサブネット
+```
+名前: training-01-subnet-pub-1a
+AZ: ap-northeast-1a
+CIDR: 10.0.10.0/24
+```
 
-### 2.4 ルートテーブル設定
-- パブリック用: training-01-rtb-pub
-  - サブネット関連付け: training-01-subnet-pub-1a
-  - ルート: training-01-igw
+### 3.2 プライベートサブネット
+```
+名前: training-01-subnet-pri-1a
+AZ: ap-northeast-1a
+CIDR: 10.0.20.0/24
 
-- プライベート用: training-01-rtb-pri
+名前: training-01-subnet-pri-1c
+AZ: ap-northeast-1c
+CIDR: 10.0.21.0/24
+```
+
+## 4. ルートテーブル設定
+### 4.1 パブリック用
+```
+名前: training-01-rtb-pub
+ルート:
+- 10.0.0.0/16 → local
+- 0.0.0.0/0 → training-01-igw
+↓
+サブネット関連付け: training-01-subnet-pub-1a
+```
+
+### 4.2 プライベート用
+```
+名前: training-01-rtb-pri
+ルート:
+- 10.0.0.0/16 → local
+↓
+サブネット関連付け: 
+- training-01-subnet-pri-1a
+- training-01-subnet-pri-1c
+```
+
+
+この順序で作成すると：
+1. まずネットワークの基盤（VPC）を作成
+2. インターネット接続の準備（IGW）
+3. ネットワークのセグメント化（サブネット）
+4. 通信経路の設定（ルートテーブル）
+
 
 ## 3. セキュリティグループ設定
 ### 3.1 Webサーバー用
