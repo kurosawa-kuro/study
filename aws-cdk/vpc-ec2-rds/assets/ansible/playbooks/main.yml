@@ -40,7 +40,7 @@
 
     - name: Configure pg_hba.conf
       template:
-        src: /etc/ansible/templates/pg_hba.conf.j2
+        src: ../templates/pg_hba.conf.j2
         dest: /var/lib/pgsql/data/pg_hba.conf
         owner: postgres
         group: postgres
@@ -90,7 +90,7 @@
 
     - name: Update pg_hba.conf for password authentication
       template:
-        src: /etc/ansible/templates/pg_hba.conf.j2
+        src: ../templates/pg_hba.conf.j2
         dest: /var/lib/pgsql/data/pg_hba.conf
         owner: postgres
         group: postgres
@@ -139,7 +139,7 @@
     # Nginx Configuration
     - name: Configure Nginx
       template:
-        src: /etc/ansible/templates/nginx.conf.j2
+        src: ../templates/nginx.conf.j2
         dest: /etc/nginx/nginx.conf
 
     - name: Start and enable Nginx
@@ -209,8 +209,10 @@
       pip:
         name: pgadmin4
         state: present
-        extra_args: --user
-      become_user: pgadmin
+        extra_args: "--no-cache-dir"  # キャッシュを使用しない
+      become: yes  # rootとして実行
+      environment:
+        PATH: "/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin"
 
     - name: Initialize pgAdmin database
       shell: |
