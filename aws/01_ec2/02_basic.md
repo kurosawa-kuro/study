@@ -217,89 +217,63 @@
 
 # AWS設定値一覧
 
-## 1. ネットワーク設定
+マークダウン形式で横長のスプレッドシートとして表示します。
 
-### VPC
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| training-01-vpc | IPv4 CIDR | 10.0.0.0/16 |
-| | テナンシー | デフォルト |
-| | DNSホスト名 | 有効 |
-| | DNSリゾルーション | 有効 |
 
-### インターネットゲートウェイ
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| training-01-igw | アタッチ先VPC | training-01-vpc |
 
-### サブネット
-| リソース名 | 種別 | AZ | CIDR | 自動パブリックIP |
-|------------|------|-----|------|------------------|
-| training-01-subnet-pub-1a | パブリック | ap-northeast-1a | 10.0.10.0/24 | 有効 |
-| training-01-subnet-pri-1a | プライベート | ap-northeast-1a | 10.0.20.0/24 | - |
-| training-01-subnet-pri-1c | プライベート | ap-northeast-1c | 10.0.21.0/24 | - |
+| カテゴリー | サービス | リソース名 | 設定項目 | 値 |
+|-----------|----------|------------|----------|-----|
+| ネットワーク | VPC | training-01-vpc | IPv4 CIDR | 10.0.0.0/16 |
+| ネットワーク | VPC | training-01-vpc | テナンシー | デフォルト |
+| ネットワーク | VPC | training-01-vpc | DNSホスト名 | 有効 |
+| ネットワーク | VPC | training-01-vpc | DNSリゾルーション | 有効 |
+| ネットワーク | IGW | training-01-igw | アタッチ先VPC | training-01-vpc |
+| ネットワーク | サブネット | training-01-subnet-pub-1a | 種別 | パブリック |
+| ネットワーク | サブネット | training-01-subnet-pub-1a | アベイラビリティゾーン | ap-northeast-1a |
+| ネットワーク | サブネット | training-01-subnet-pub-1a | CIDR | 10.0.10.0/24 |
+| ネットワーク | サブネット | training-01-subnet-pub-1a | 自動パブリックIP | 有効 |
+| ネットワーク | サブネット | training-01-subnet-pri-1a | 種別 | プライベート |
+| ネットワーク | サブネット | training-01-subnet-pri-1a | アベイラビリティゾーン | ap-northeast-1a |
+| ネットワーク | サブネット | training-01-subnet-pri-1a | CIDR | 10.0.20.0/24 |
+| ネットワーク | サブネット | training-01-subnet-pri-1a | 自動パブリックIP | 無効 |
+| ネットワーク | サブネット | training-01-subnet-pri-1c | 種別 | プライベート |
+| ネットワーク | サブネット | training-01-subnet-pri-1c | アベイラビリティゾーン | ap-northeast-1c |
+| ネットワーク | サブネット | training-01-subnet-pri-1c | CIDR | 10.0.21.0/24 |
+| ネットワーク | サブネット | training-01-subnet-pri-1c | 自動パブリックIP | 無効 |
+| ネットワーク | ルートテーブル | training-01-rtb-pub | 種別 | パブリック |
+| ネットワーク | ルートテーブル | training-01-rtb-pub | 関連付けるサブネット | training-01-subnet-pub-1a |
+| ネットワーク | ルートテーブル | training-01-rtb-pub | デフォルトルート | 0.0.0.0/0 → training-01-igw |
+| ネットワーク | ルートテーブル | training-01-rtb-pri | 種別 | プライベート |
+| ネットワーク | ルートテーブル | training-01-rtb-pri | 関連付けるサブネット | training-01-subnet-pri-1a/1c |
+| ネットワーク | ルートテーブル | training-01-rtb-pri | デフォルトルート | なし |
+| セキュリティ | セキュリティグループ | training-01-sg-web | 用途 | Webサーバー |
+| セキュリティ | セキュリティグループ | training-01-sg-web | インバウンドルール | TCP/22: 0.0.0.0/0 |
+| セキュリティ | セキュリティグループ | training-01-sg-web | インバウンドルール | TCP/80: 0.0.0.0/0 |
+| セキュリティ | セキュリティグループ | training-01-sg-web | インバウンドルール | TCP/3000: 0.0.0.0/0 |
+| セキュリティ | セキュリティグループ | training-01-sg-web | アウトバウンドルール | ALL: 0.0.0.0/0 |
+| セキュリティ | セキュリティグループ | training-01-sg-db | 用途 | データベース |
+| セキュリティ | セキュリティグループ | training-01-sg-db | インバウンドルール | TCP/5432: training-01-sg-web |
+| セキュリティ | セキュリティグループ | training-01-sg-db | アウトバウンドルール | ALL: 0.0.0.0/0 |
+| コンピューティング | EC2 | training-01-instance-web | AMI | Amazon Linux 2023 |
+| コンピューティング | EC2 | training-01-instance-web | インスタンスタイプ | t2.micro |
+| コンピューティング | EC2 | training-01-instance-web | サブネット | training-01-subnet-pub-1a |
+| コンピューティング | EC2 | training-01-instance-web | セキュリティグループ | training-01-sg-web |
+| コンピューティング | EC2 | training-01-instance-web | ストレージ | 10GB (gp3) |
+| コンピューティング | EC2 | training-01-instance-web | キーペア | training-01-key-web |
+| コンピューティング | Elastic IP | training-01-eip-web | アタッチ先 | training-01-instance-web |
+| コンピューティング | ALB | training-01-elb | スキーム | インターネット向け |
+| コンピューティング | ALB | training-01-elb | VPC | training-01-vpc |
+| コンピューティング | ALB | training-01-elb | リスナー | HTTP/80 |
+| コンピューティング | ALB | training-01-elb | セキュリティグループ | training-01-sg-web |
+| コンピューティング | ALB | training-01-tg-web | ヘルスチェックパス | /health |
+| ストレージ | S3 | training-01-s3 | リージョン | ap-northeast-1 |
+| ストレージ | S3 | training-01-s3 | パブリックアクセス | すべてブロック |
+| CDN | CloudFront | - | オリジンドメイン | training-01-s3.s3.amazonaws.com |
+| CDN | CloudFront | - | アクセス制御 | Origin access control |
+| CDN | CloudFront | - | WAF | 有効 |
+| セキュリティ | WAF | training-01-waf | リソースタイプ | CloudFront |
+| セキュリティ | WAF | training-01-waf | 防御ルール | SQLインジェクション |
+| セキュリティ | WAF | training-01-waf | 防御ルール | クロスサイトスクリプティング |
+| セキュリティ | WAF | training-01-waf | 防御ルール | リクエストレート制限 |
 
-### ルートテーブル
-| リソース名 | 種別 | 関連付けるサブネット | デフォルトルート |
-|------------|------|----------------------|------------------|
-| training-01-rtb-pub | パブリック | training-01-subnet-pub-1a | 0.0.0.0/0 → training-01-igw |
-| training-01-rtb-pri | プライベート | training-01-subnet-pri-1a, training-01-subnet-pri-1c | なし |
-
-## 2. セキュリティ設定
-
-### セキュリティグループ
-| リソース名 | 用途 | インバウンドルール | アウトバウンドルール |
-|------------|------|-------------------|---------------------|
-| training-01-sg-web | Webサーバー | TCP/22: 0.0.0.0/0<br>TCP/80: 0.0.0.0/0<br>TCP/3000: 0.0.0.0/0 | ALL: 0.0.0.0/0 |
-| training-01-sg-db | データベース | TCP/5432: training-01-sg-web | ALL: 0.0.0.0/0 |
-
-## 3. コンピューティング設定
-
-### EC2インスタンス
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| training-01-instance-web | AMI | Amazon Linux 2023 |
-| | インスタンスタイプ | t2.micro |
-| | サブネット | training-01-subnet-pub-1a |
-| | セキュリティグループ | training-01-sg-web |
-| | ストレージ | 10GB (gp3) |
-| | キーペア | training-01-key-web |
-
-### Elastic IP
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| training-01-eip-web | アタッチ先 | training-01-instance-web |
-
-### ロードバランサー
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| training-01-elb | スキーム | インターネット向け |
-| | VPC | training-01-vpc |
-| | リスナー | HTTP/80 |
-| | セキュリティグループ | training-01-sg-web |
-| training-01-tg-web | ヘルスチェックパス | /health |
-
-## 4. ストレージ設定
-
-### S3バケット
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| training-01-s3 | リージョン | ap-northeast-1 |
-| | パブリックアクセス | すべてブロック |
-
-## 5. CDN設定
-
-### CloudFront
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| - | オリジンドメイン | training-01-s3.s3.amazonaws.com |
-| | アクセス制御 | Origin access control |
-| | WAF | 有効 |
-
-## 6. セキュリティ設定
-
-### WAF
-| リソース名 | 設定項目 | 値 |
-|------------|----------|-----|
-| training-01-waf | リソースタイプ | CloudFront |
-| | 防御ルール | SQLインジェクション<br>クロスサイトスクリプティング<br>リクエストレート制限 |
+これにより、すべての設定値が一覧形式で確認できます。カテゴリー順に並んでおり、各リソースの設定が一目で分かるようになっています。ネットワーク、セキュリティ、コンピューティング、ストレージ、CDNの各カテゴリーごとに設定値がグループ化されています。
