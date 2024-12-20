@@ -50,6 +50,46 @@
 1. CloudFrontダッシュボードで「ディストリビューションを作成」を選択
 2. オリジン設定：
    - オリジンドメイン: training-01-s3.s3.amazonaws.com
-3. 設定項目：
-   - 価格クラス: すべてのエッジロケーション
-   - SSL証明書: デフォルト
+オリジンアクセス
+Origin access control settings (recommended)
+
+Origin access control
+Create new OAC
+デフォルトで作成
+
+ウェブアプリケーションファイアウォール (WAF)
+セキュリティ保護を有効にする
+
+S3 バケットポリシーを更新する必要があります
+ポリシーをコピー
+
+。S3 バケットの権限に移動してポリシーを更新する 
+リージョン変更
+
+アクセス許可
+
+バケットポリシー
+編集
+
+{
+        "Version": "2008-10-17",
+        "Id": "PolicyForCloudFrontPrivateContent",
+        "Statement": [
+            {
+                "Sid": "AllowCloudFrontServicePrincipal",
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "cloudfront.amazonaws.com"
+                },
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::training-01-s3/*",
+                "Condition": {
+                    "StringEquals": {
+                      "AWS:SourceArn": "arn:aws:cloudfront::216989128190:distribution/E12PCJF8HWKJSU"
+                    }
+                }
+            }
+        ]
+      }
+
+
