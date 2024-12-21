@@ -34,7 +34,7 @@ class SecurityGroupRuleManager {
   static getIngressRules(): IngressRule[] {
     return [
       { port: 22, description: 'Allow SSH access from anywhere' },
-      { port: 3000, description: 'Allow HTTP access from anywhere' },
+      { port: 8080, description: 'Allow HTTP access from anywhere' },
       { port: 8000, description: 'Allow HTTP access from anywhere' }
     ];
   }

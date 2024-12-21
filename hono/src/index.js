@@ -5,7 +5,7 @@ const app = new Hono()
 
 app.get('/', (c) => c.text('Hello, World!'))
 
-const port = 3000
+const port = 8080
 console.log(`Server is running on http://localhost:${port}`)
 
 serve({

@@ -18,7 +18,7 @@ EC2ダッシュボードで「セキュリティグループの作成」
 名前: aws-fargate-express-01-sg-web
 インバウンドルール:
 HTTP (TCP/80): 0.0.0.0/0
-アプリケーションポート (TCP/3000): 0.0.0.0/0
+アプリケーションポート (TCP/8080): 0.0.0.0/0
 2. アプリケーションの準備と配置
 2-1. GitHubリポジトリの作成
 リポジトリ名: aws-fargate-express
@@ -49,7 +49,7 @@ ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-re
 docker push ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
 2-4. ローカルでの動作確認
 # Dockerコンテナとしての動作確認
-docker run -p 3000:3000 aws-fargate-express-01-repository
+docker run -p 8080:8080 aws-fargate-express-01-repository
 3. ECSの設定
 タスク定義の作成
 ECSコンソールで「タスク定義」→「新規作成」
@@ -58,7 +58,7 @@ ECSコンソールで「タスク定義」→「新規作成」
 コンテナ設定:
 名前: fargate-express
 イメージURI: ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
-ポート: 3000
+ポート: 8080
 リソース:
 CPU: 0.25 vCPU
 メモリ: 0.5 GB
@@ -83,5 +83,5 @@ VPC/サブネット: 作成済みのものを選択
 4. デプロイ後の確認
 タスクの状態が「RUNNING」になるまで待機
 パブリックIPアドレスを確認
-http://<パブリックIP>:3000 でアクセス
+http://<パブリックIP>:8080 でアクセス
 {"message":"Hello World from Express!"} が表示されることを確認

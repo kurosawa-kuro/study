@@ -21,7 +21,7 @@
    - 名前: `aws-fargate-express-01-sg-web`
 3. インバウンドルール:
    - HTTP (TCP/80): `0.0.0.0/0`
-   - アプリケーションポート (TCP/3000): `0.0.0.0/0`
+   - アプリケーションポート (TCP/8080): `0.0.0.0/0`
 
 ## 2. アプリケーションの準備と配置
 
@@ -58,7 +58,7 @@ docker push ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-e
 ### 2-4. ローカルでの動作確認
 ```bash
 # Dockerコンテナとしての動作確認
-docker run -p 3000:3000 aws-fargate-express-01-repository
+docker run -p 8080:8080 aws-fargate-express-01-repository
 ```
 
 ## 3. ECSの設定
@@ -70,7 +70,7 @@ docker run -p 3000:3000 aws-fargate-express-01-repository
    - コンテナ設定:
      - 名前: `fargate-express`
      - イメージURI: `${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest`
-     - ポート: 3000
+     - ポート: 8080
    - リソース:
      - CPU: 0.25 vCPU
      - メモリ: 0.5 GB
@@ -99,5 +99,5 @@ docker run -p 3000:3000 aws-fargate-express-01-repository
 
 1. タスクの状態が「RUNNING」になるまで待機
 2. パブリックIPアドレスを確認
-3. `http://<パブリックIP>:3000` でアクセス
+3. `http://<パブリックIP>:8080` でアクセス
 4. `{"message":"Hello World from Express!"}` が表示されることを確認
