@@ -117,7 +117,7 @@ ame: Deploy to Staging
 on:
   push:
     branches:
-      - develop
+      - Staging
 
 jobs:
   deploy:
@@ -174,3 +174,36 @@ git rebase develop
 ```
 
 このガイドラインに従うことで、効率的な開発フローと安定したデプロイを実現します。
+
+GitHubでdefault merge方向を設定する手順です：
+
+1. GitHubリポジトリの設定
+```
+1. リポジトリのメインページで [Settings] タブを選択
+2. 左サイドバーの [Branches] を選択
+```
+
+developをデフォルトブランチに設定する手順は以下の通りです：
+
+1. GitHubリポジトリのトップページで：
+```
+Settings > General と進む
+```
+
+2. 下にスクロールして "Default branch" セクションを探す：
+```
+Repository default branch の横の "Switch to another branch" ボタンをクリック
+```
+
+3. ドロップダウンから：
+```
+"develop" を選択
+"Update" ボタンをクリック
+```
+
+これにより：
+- developがデフォルトブランチになる
+- 新規PRのデフォルトのターゲットブランチがdevelopになる
+- リポジトリのクローン時にdevelopブランチがデフォルトで取得される
+
+この設定は、Branch protection rulesの設定とは別の場所にあります。Settings > Generalで設定できます。
