@@ -4,13 +4,21 @@ AWSログイン済み
 AWSキー確保済み
 セキュリティグループは事前準備で作成済み
 
+ec2-user@ip-172-26-2-245 infra-devcontainer-aws-cdk-cicd-nodejs]$ ls -la docker/staging.Dockerfile 
+-rw-rw-r--. 1 ec2-user ec2-user 106 Dec 21 05:40 docker/staging.Dockerfile
+[ec2-user@ip-172-26-2-245 infra-devcontainer-aws-cdk-cicd-nodejs]$ ls -la package.*
+-rw-rw-r--. 1 ec2-user ec2-user 1302 Dec 21 05:40 package.json
+[ec2-user@ip-172-26-2-245 infra-devcontainer-aws-cdk-cicd-nodejs]$ ls -la src/app.js 
+-rw-rw-r--. 1 ec2-user ec2-user 9042 Dec 21 09:43 src/app.js
+[ec2-user@ip-172-26-2-245 infra-devcontainer-aws-cdk-cicd-nodejs]$ npm run production
+
+
 # AWS FargateでExpress EJSアプリをデプロイする手順書
 
 ## 1. セキュリティグループ設定
 ```yaml
 名前: aws-fargate-express-01-sg-web
 インバウンドルール:
-  - HTTP (80): 0.0.0.0/0
   - アプリポート (8080): 0.0.0.0/0
 ```
 
