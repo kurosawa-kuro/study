@@ -1,4 +1,10 @@
-# AWS FargateでExpress APIをデプロイする手順書
+できるだけこのドキュメントにそってFargateにデプロイしたい
+
+AWSログイン済み
+AWSキー確保済み
+セキュリティグループは事前準備で作成済み
+
+# AWS FargateでExpress EJSアプリをデプロイする手順書
 
 ## 1. セキュリティグループ設定
 ```yaml
