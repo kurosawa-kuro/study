@@ -1,4 +1,10 @@
 ```
+ステージングのインスタンスのbranchをdevelopにしてください
+```
+
+
+
+```
 GitHubリポジトリの Settings > Secrets and variables > Actions で以下のシークレットを設定してください：
 ```
 
