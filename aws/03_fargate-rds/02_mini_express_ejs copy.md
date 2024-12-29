@@ -29,12 +29,13 @@ DATABASE_URL=""
 # リポジトリ → プッシュコマンドの表示 から取得
 
 # イメージのビルドとプッシュ
-aws ecr get-login-password --region ap-northeast-1 | \
-docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com
+aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 476114153361.dkr.ecr.ap-northeast-1.amazonaws.com
 
-docker build -t aws-fargate-express-01-repository -f docker/production.Dockerfile .
-docker tag aws-fargate-express-01-repository:latest ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
-docker push ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
+docker build -t aws-fargate-express-01-repository .
+
+docker tag aws-fargate-express-01-repository:latest 476114153361.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
+
+docker push 476114153361.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
 ```
 
 ```
