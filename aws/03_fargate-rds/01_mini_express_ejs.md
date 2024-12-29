@@ -80,3 +80,16 @@ docker push ${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-e
 ```
 aws logs get-log-events --log-group-name /ecs/aws-fargate-express-01-task --log-stream-name $(aws logs describe-log-streams --log-group-name /ecs/aws-fargate-express-01-task --query 'logStreams[0].logStreamName' --output text) | cat
 ```
+
+```
+aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 476114153361.dkr.ecr.ap-northeast-1.amazonaws.com
+
+docker pull 476114153361.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
+
+docker run -p 8080:8080 \
+  -e NODE_ENV=development \
+  -e APP_PORT=8080 \
+  476114153361.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest
+
+docker logs $(docker ps -q --filter ancestor=476114153361.dkr.ecr.ap-northeast-1.amazonaws.com/aws-fargate-express-01-repository:latest)
+```
