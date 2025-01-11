@@ -133,3 +133,134 @@ FROM stock_trading.demo_kinesis_firehose_02;
 - 最小権限の原則に従ってIAMロールを設定
 - S3バケットのアクセス権限を適切に設定
 - Athenaのクエリ結果の保存先を暗号化することを推奨
+
+```
+import * as cdk from 'aws-cdk-lib';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as glue from 'aws-cdk-lib/aws-glue';
+import * as kf from 'aws-cdk-lib/aws-kinesisfirehose';
+import { Construct } from 'constructs';
+
+export interface FirehoseGlueStackProps extends cdk.StackProps {
+  readonly bucketName: string;
+  readonly databaseName: string;
+  readonly tableName: string;
+}
+
+export class FirehoseGlueStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: FirehoseGlueStackProps) {
+    super(scope, id, props);
+
+    // S3 bucket for storing Firehose data and Athena query results
+    const bucket = new s3.Bucket(this, 'DataBucket', {
+      bucketName: props.bucketName,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Create Glue IAM Role
+    const glueRole = new iam.Role(this, 'GlueRole', {
+      assumedBy: new iam.ServicePrincipal('glue.amazonaws.com'),
+    });
+
+    // Add required policies to Glue role
+    glueRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject',
+        's3:ListBucket',
+      ],
+      resources: [
+        bucket.bucketArn,
+        `${bucket.bucketArn}/*`,
+      ],
+    }));
+
+    glueRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSGlueServiceRole')
+    );
+
+    // Create Glue Database
+    const database = new glue.CfnDatabase(this, 'GlueDatabase', {
+      catalogId: this.account,
+      databaseInput: {
+        name: props.databaseName,
+        description: 'Database for Firehose stock trading data',
+      },
+    });
+
+    // Create Glue Crawler
+    const crawler = new glue.CfnCrawler(this, 'GlueCrawler', {
+      name: 'stock-data-crawler',
+      role: glueRole.roleArn,
+      databaseName: props.databaseName,
+      targets: {
+        s3Targets: [{
+          path: `s3://${props.bucketName}/firehose/`,
+        }],
+      },
+      schedule: {
+        scheduleExpression: 'cron(0 * * * ? *)', // Run hourly
+      },
+      tablePrefix: 'raw_',
+    });
+
+    // Create Firehose Role
+    const firehoseRole = new iam.Role(this, 'FirehoseRole', {
+      assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
+    });
+
+    firehoseRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        's3:AbortMultipartUpload',
+        's3:GetBucketLocation',
+        's3:GetObject',
+        's3:ListBucket',
+        's3:ListBucketMultipartUploads',
+        's3:PutObject',
+      ],
+      resources: [
+        bucket.bucketArn,
+        `${bucket.bucketArn}/*`,
+      ],
+    }));
+
+    // Create Kinesis Firehose
+    const firehose = new kf.CfnDeliveryStream(this, 'StockDataFirehose', {
+      deliveryStreamName: 'stock-data-stream',
+      deliveryStreamType: 'DirectPut',
+      s3DestinationConfiguration: {
+        bucketArn: bucket.bucketArn,
+        bufferingHints: {
+          intervalInSeconds: 60,
+          sizeInMBs: 128,
+        },
+        compressionFormat: 'UNCOMPRESSED',
+        prefix: 'firehose/',
+        roleArn: firehoseRole.roleArn,
+      },
+    });
+
+    // Output values
+    new cdk.CfnOutput(this, 'DataBucketName', {
+      value: bucket.bucketName,
+      description: 'Name of the S3 bucket storing the data',
+    });
+
+    new cdk.CfnOutput(this, 'GlueDatabaseName', {
+      value: props.databaseName,
+      description: 'Name of the Glue database',
+    });
+
+    new cdk.CfnOutput(this, 'FirehoseStreamName', {
+      value: firehose.ref,
+      description: 'Name of the Kinesis Firehose delivery stream',
+    });
+  }
+}
+```

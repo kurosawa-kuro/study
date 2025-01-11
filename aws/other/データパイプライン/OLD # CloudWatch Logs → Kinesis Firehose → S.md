@@ -60,8 +60,8 @@
    - バケット: `cdkjavascript01-s3`
    - プレフィックス: `log-raw-data/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/`
    - バッファサイズ: 5 MB
-   - バッファ間隔: 300秒
-   - 圧縮形式: GZIP
+   - バッファ間隔: 60秒
+   - 圧縮形式: 有効ではありません
 
 4. IAMロール: `FirehoseLogDeliveryRole` を選択
 
